@@ -2,15 +2,7 @@
   command = "npm run build"
   publish = "public"
   
-[functions]
-  directory = "api"
-
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-
 [[redirects]]
   from = "/*"
-  to = "/index.php"
+  to = "/index.html"
   status = 200
