@@ -69,7 +69,7 @@ export default function Search() {
                         required
                         autoComplete="off"
                         onChange={(e) => keywordSet(e.target.value)}
-                        className="py-6 px-5 pr-10 rounded-full text-sm focus:outline-none border border-gray-300 bg-white w-full transition-all duration-300 ease-in-out shadow-sm hover:shadow-md focus:shadow-lg focus:border-fomoPrimary-0 focus:ring-2 focus:ring-fomoPrimary-0 focus:ring-opacity-20"
+                        className="py-6 px-8 pr-10 rounded-xl text-sm focus:outline-none border border-gray-300 bg-white w-full transition-all duration-300 ease-in-out shadow-sm hover:shadow-md focus:shadow-lg focus:border-fomoPrimary-0 focus:ring-2 focus:ring-fomoPrimary-0 focus:ring-opacity-20"
                     />
                     <span className="absolute right-0 -top-0.5 mt-3 mr-4 text-fomoPrimary-0 group-hover:text-fomoPrimary-1 transition-all duration-300 ease-in-out">
                         {!searching && <SearchIcon />}
