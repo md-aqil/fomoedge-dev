@@ -139,8 +139,6 @@ export default function Hero() {
                             >
                                 Explore Our Mentors
                             </Link>
-
-                           
                         </Button>
 
                         <Button
