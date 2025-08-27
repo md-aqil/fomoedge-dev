@@ -3,8 +3,8 @@
   publish = "public"
   
 [[redirects]]
-  from = "/assets/*"
-  to = "/assets/:splat"
+  from = "/build/assets/*"
+  to = "/build/assets/:splat"
   status = 200
 
 [[redirects]]
