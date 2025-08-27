@@ -1,12 +1,8 @@
 [build]
   command = "npm run build"
-  publish = "public"
-  
-[[redirects]]
-  from = "/build/assets/*"
-  to = "/build/assets/:splat"
-  status = 200
+  publish = "build"
 
+# Single Page App routing fix
 [[redirects]]
   from = "/*"
   to = "/index.html"
