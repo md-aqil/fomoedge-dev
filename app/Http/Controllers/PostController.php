@@ -67,7 +67,37 @@ class PostController extends Controller
 	public function show($slug)
 	{
 		$post = Post::with('image', 'categories')->where('slug', $slug)->published()->firstOrFail();
+		
+		// Get related posts from same categories or random posts if none found
+		$relatedPosts = Post::with('image', 'categories')
+			->where('id', '!=', $post->id)
+			->published()
+			->when($post->categories->count() > 0, function ($query) use ($post) {
+				$categoryIds = $post->categories->pluck('id')->toArray();
+				return $query->whereHas('categories', function ($q) use ($categoryIds) {
+					$q->whereIn('post_categories.id', $categoryIds);
+				});
+			})
+			->latest()
+			->take(3)
+			->get();
+			
+		// If we don't have enough related posts, fill with random posts
+		if ($relatedPosts->count() < 3) {
+			$additionalPosts = Post::with('image', 'categories')
+				->where('id', '!=', $post->id)
+				->whereNotIn('id', $relatedPosts->pluck('id')->toArray())
+				->published()
+				->inRandomOrder()
+				->take(3 - $relatedPosts->count())
+				->get();
+				
+			$relatedPosts = $relatedPosts->merge($additionalPosts);
+		}
 
-		return Inertia::render('Blog/Post', ['post' => new PostResource($post)]);
+		return Inertia::render('Blog/Post', [
+			'post' => new PostResource($post),
+			'relatedPosts' => PostResource::collection($relatedPosts)
+		]);
 	}
 }

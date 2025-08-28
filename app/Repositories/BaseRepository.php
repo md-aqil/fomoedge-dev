@@ -140,15 +140,32 @@ abstract class BaseRepository
 
     function uploadImage($model, $request, $relationType = 'image')
     {
+        Log::info('BaseRepository::uploadImage called', [
+            'model_class' => get_class($model),
+            'model_id' => $model->id ?? 'no_id',
+            'has_image_file' => $request->hasFile('image'),
+            'relation_type' => $relationType
+        ]);
+        
         if (!$request->hasFile('image')) {
+            Log::info('BaseRepository::uploadImage - No image file found in request');
             return false;
         }
         $file = $request->file('image');
+        
+        Log::info('BaseRepository::uploadImage - File details', [
+            'original_name' => $file->getClientOriginalName(),
+            'size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
+            'is_valid' => $file->isValid()
+        ]);
 
         try {
             $url = $file->store('images');
+            Log::info('BaseRepository::uploadImage - File stored', ['url' => $url]);
+            
             if ($url) {
-                $model->image()->create([
+                $attachment = $model->image()->create([
                     'user_id' => auth()->user()->id,
                     'name' => $file->getClientOriginalName(),
                     'path' => $file->hashName(),
@@ -158,10 +175,23 @@ abstract class BaseRepository
                     'url' => $url,
                     'relation_type' => $relationType,
                 ]);
+                
+                Log::info('BaseRepository::uploadImage - Attachment created', [
+                    'attachment_id' => $attachment->id,
+                    'attachment_url' => $attachment->url,
+                    'full_path' => $attachment->full_path
+                ]);
+                
+                return $attachment;
             }
         } catch (\Throwable $th) {
-            Log::error($th);
+            Log::error('BaseRepository::uploadImage - Exception occurred', [
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
         }
+        
+        return false;
     }
 
     public function getOptionsForSelect()

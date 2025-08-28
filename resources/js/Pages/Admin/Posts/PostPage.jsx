@@ -115,18 +115,27 @@ export default function PostPage({ post, postCategories }) {
                     <TwoColumnLayout.Actions></TwoColumnLayout.Actions>
                 </TwoColumnLayout.Main>
                 <TwoColumnLayout.Aside>
-                    {post && (
-                        <ShadcnCard title={post?.full_name}>
-                            <TextMuted className="inline-block">
-                                Created at
-                            </TextMuted>
-                            <TextLarge>{post.created_at_string}</TextLarge>
-                            <TextMuted className="inline-block pt-2">
-                                Last Updated
-                            </TextMuted>
-                            <TextLarge>{post.updated_at_string}</TextLarge>
-                        </ShadcnCard>
-                    )}
+                    <div className="w-full h-full space-y-4">
+                        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div className="flex flex-col space-y-1.5 p-6">
+                                <h3 className="text-2xl font-semibold leading-none tracking-tight">
+                                    {post ? "Post Details" : "Create Post"}
+                                </h3>
+                            </div>
+                            <div className="p-6 pt-0 space-y-4">
+                                {post && (
+                                    <>
+                                        <span className="text-sm text-muted-foreground inline-block">Created at</span>
+                                        <div className="font-bold capitalize">{post.created_at_string}</div>
+                                        <span className="text-sm text-muted-foreground inline-block pt-2">Last Updated</span>
+                                        <div className="font-bold capitalize">{post.updated_at_string}</div>
+                                        <hr className="my-4" />
+                                    </>
+                                )}
+                                <PostForm.SidebarComponents />
+                            </div>
+                        </div>
+                    </div>
                 </TwoColumnLayout.Aside>
             </TwoColumnLayout.Content>
         </TwoColumnLayout>

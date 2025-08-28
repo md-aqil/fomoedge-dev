@@ -28,7 +28,8 @@ class DatabaseSeeder extends Seeder
             SettingSeeder::class,
             TopicsAndTagsSeeder::class,
             TaxSeeder::class,
-            PlatformFeeSeeder::class
+            PlatformFeeSeeder::class,
+            FaqSeeder::class
         ]);
     }
 }

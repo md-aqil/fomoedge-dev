@@ -1,5 +1,5 @@
 import React from "react";
-import { Briefcase, BookOpen, Users, Star } from "lucide-react";
+import { Calendar, Users, Star } from "lucide-react";
 import { Button } from "@/shadcn/ui/button";
 import { Link } from "@inertiajs/react";
 
@@ -7,90 +7,97 @@ export default function RedesignedMentorCard({ mentor }) {
     // Extract mentor data with fallbacks
     const mentorName = mentor?.alias_name || mentor?.full_name || "Mentor Name";
     const experience = mentor?.experience || "Experience not specified";
-    const profileImage = mentor?.profile_picture?.full_path || "/images/unknown.jpg";
+    
+    // Generate placeholder image with initials for all mentors
+    const generatePlaceholderImage = (name) => {
+        // Extract initials from name
+        const nameParts = name.trim().split(' ');
+        let initials = '';
+        
+        if (nameParts.length >= 2) {
+            // First letter of first name + first letter of last name
+            initials = nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0);
+        } else if (nameParts.length === 1) {
+            // First two letters of single name
+            initials = nameParts[0].substring(0, 2);
+        } else {
+            initials = 'AU'; // Default fallback
+        }
+        
+        return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&size=300&background=f3f4f6&color=374151&format=png&bold=true`;
+    };
+    
+    // Use actual image if available, otherwise generate placeholder
+    const profileImage = mentor?.profile_picture?.full_path || generatePlaceholderImage(mentorName);
+    
     const sessionsCount = mentor?.bookings_count || 0;
     const avgRating = mentor?.avg_mentor_rating || 0;
     const tags = mentor?.topic_tags || mentor?.tags || [];
     
+    // Create expertise string from tags or experience
+    const expertise = tags.length > 0 
+        ? tags.slice(0, 4).map(tag => tag.title || tag).join(" | ")
+        : experience.length > 50 
+            ? experience.substring(0, 50) + "..."
+            : experience;
+    
     return (
-        <div className="border rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white flex flex-col h-full">
+        <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group">
             {/* Profile Image */}
             <div className="relative">
-                <img
-                    src={profileImage}
-                    alt={mentorName}
-                    className="w-full h-48 object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
+                    <img
+                        alt={`${mentorName} profile`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        src={profileImage}
+                        onError={(e) => {
+                            // If image fails to load, use placeholder with initials
+                            e.target.src = generatePlaceholderImage(mentorName);
+                        }}
+                    />
+                </div>
                 
-                {/* Rating badge */}
-                {avgRating > 0 && (
-                    <div className="absolute top-3 right-3 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                        <Star size={12} fill="white" />
-                        <span>{avgRating.toFixed(1)}</span>
-                    </div>
-                )}
+                {/* Satisfaction badge */}
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+                    <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                    <span className="text-xs font-medium text-gray-700">100%</span>
+                </div>
             </div>
             
             {/* Card Content */}
-            <div className="p-5 flex flex-col flex-grow">
-                {/* Mentor Name */}
-                <h3 className="text-xl font-bold text-gray-900 mb-1 truncate">
-                    {mentorName}
-                </h3>
-                
-                {/* Experience */}
-                <div className="flex items-start gap-2 mb-3">
-                    <Briefcase className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-gray-600 line-clamp-2">
-                        {experience}
-                    </p>
+            <div className="p-4">
+                <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-yellow-600 transition-colors duration-200">
+                        {mentorName}
+                    </h3>
+                   <p className="text-sm text-gray-600 overflow-hidden" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>
+                            {expertise}
+                        </p>
                 </div>
                 
-                {/* Tags */}
-                {tags && tags.length > 0 && (
-                    <div className="mb-4">
-                        <div className="flex flex-wrap gap-1">
-                            {tags.slice(0, 3).map((tag, index) => (
-                                <span
-                                    key={index}
-                                    className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full truncate max-w-[100px]"
-                                >
-                                    {tag.name || tag.title || tag}
-                                </span>
-                            ))}
-                            {tags.length > 3 && (
-                                <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
-                                    +{tags.length - 3}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                )}
-                
                 {/* Stats */}
-                <div className="flex items-center justify-between mb-4 pt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-1 text-gray-600">
-                        <BookOpen size={16} />
-                        <span className="text-sm">{sessionsCount} sessions</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-gray-600">
-                        <Users size={16} />
-                        <span className="text-sm">100% satisfaction</span>
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">{sessionsCount} sessions</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Users className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">100% satisfaction</span>
+                        </div>
                     </div>
                 </div>
                 
                 {/* View Details Button */}
-                <div className="mt-auto">
-                    <Button 
-                        asChild 
-                        className="bg-amber-300 w-full text-black font-medium py-2 rounded-lg transition-all duration-300"
-                    >
-                        <Link href={route("mentor.find-by-id", mentor?.unique_id)}>
-                            View Details
-                        </Link>
-                    </Button>
-                </div>
+                <Button 
+                    asChild 
+                    className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-medium py-3 px-4 rounded-lg transition-all duration-200 hover:shadow-md active:transform active:scale-95"
+                >
+                    <Link href={route("mentor.find-by-id", mentor?.unique_id)}>
+                        View Details
+                    </Link>
+                </Button>
             </div>
         </div>
     );

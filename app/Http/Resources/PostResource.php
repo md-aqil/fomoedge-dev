@@ -19,6 +19,7 @@ class PostResource extends JsonResource
 		$data['created_at_string'] = $this->created_at->toDateTimeString();
 		$data['updated_at_string'] = $this->updated_at->toDateTimeString();
 		$data['categories'] = CategoryResource::collection($this->whenLoaded('categories'));
+		$data['image'] = $this->whenLoaded('image');
 		return $data;
 	}
 }

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import NoDataAlert from "./NoDataAlert";
-import ProfileImageCard from "./Cards/ProfileImageCard";
+import RedesignedMentorCard from "./Cards/RedesignedMentorCard";
 import { Checkbox } from "@/shadcn/ui/checkbox";
 import { ScrollArea } from "@/shadcn/ui/scroll-area";
 import SectionWrapper from "./SectionWrapper";
@@ -25,6 +25,11 @@ import { ListFilter } from "lucide-react";
 export default function MentorsWithFilter({ topics }) {
     const [selectedTags, setSelectedTags] = useState([]);
     const [selectedMentors, setSelectedMentors] = useState([]);
+
+    // Helper function to check if a topic has any selected tags
+    const hasSelectedTags = (topic) => {
+        return topic.active_tags.some(tag => selectedTags.includes(tag.slug));
+    };
 
     React.useEffect(() => {
         const allMentors = topics.flatMap((topic) =>
@@ -70,51 +75,63 @@ export default function MentorsWithFilter({ topics }) {
 
     const FilterContent = () => (
         <>
-            <SectionWrapper.Heading
-                level="h3"
-                className="text-xl font-semibold text-start"
-            >
-                Filter by
-            </SectionWrapper.Heading>
-            <ScrollArea className="overflow-auto sm:p-3 max-h-[calc(100vh-200px)] bg-yellow-50/10">
-                {topics.map((topic) => (
-                    <div key={topic.id} className="mb-4">
-                        <h4 className="font-semibold mb-2">{topic.title}</h4>
-                        <div className="max-h-60 overflow-y-auto">
-                            {topic.active_tags.map((tag) => (
-                                <Label
-                                    htmlFor={tag.slug}
-                                    key={tag.id}
-                                    // className=""
-                                    className={`flex items-center text-[16px] mb-2 cursor-pointer mx-0  ${
-                                        selectedTags.includes(tag.slug)
-                                            ? "text-black"
-                                            : "text-slate-500"
-                                    }`}
-                                >
-                                    <Checkbox
-                                        id={tag.slug}
-                                        checked={selectedTags.includes(
-                                            tag.slug
-                                        )}
-                                        onCheckedChange={() =>
-                                            handleTagChange(tag)
-                                        }
-                                    />
-                                    <span className="ml-2">{tag.title}</span>
-                                </Label>
-                            ))}
+            <div className="box-border relative shrink-0 px-3 py-4 mx-auto max-w-none bg-white rounded-lg border border-solid border-slate-200 max-md:mx-auto max-md:my-0 max-sm:p-3 max-sm:rounded-lg">
+                <SectionWrapper.Heading
+                    level="h3"
+                    className="text-md font-normal text-start mb-2 px-2"
+                >
+                    Filter by
+                </SectionWrapper.Heading>
+                <div className="overflow-auto">
+                    {topics.map((topic) => (
+                        <div key={topic.id} className="mb-1">
+                            <Accordion type="single" collapsible>
+                                                            <AccordionItem value={topic.id} className="border-b-0">
+                                                                <AccordionTrigger className={`${hasSelectedTags(topic) ? "bg-amber-300 text-black" : ""}`}>
+                                                                    <h4 className="font-light text-sm">
+                                                                        {topic.title}
+                                                                    </h4>
+                                                                </AccordionTrigger>
+                                    <AccordionContent className="pb-0">
+                                        <div className="">
+                                            {topic.active_tags.map((tag) => (
+                                                <Label
+                                                    htmlFor={tag.slug}
+                                                    key={tag.id}
+                                                    className={`flex items-center text-[16px] my-2 cursor-pointer mx-0 ${
+                                                        selectedTags.includes(tag.slug)
+                                                            ? "text-black"
+                                                            : "text-slate-500"
+                                                    }`}
+                                                >
+                                                    <Checkbox
+                                                        id={tag.slug}
+                                                        checked={selectedTags.includes(
+                                                            tag.slug
+                                                        )}
+                                                        onCheckedChange={() =>
+                                                            handleTagChange(tag)
+                                                        }
+                                                        className="mr-3"
+                                                    />
+                                                    <span>{tag.title}</span>
+                                                </Label>
+                                            ))}
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
                         </div>
-                    </div>
-                ))}
-            </ScrollArea>
+                    ))}
+                </div>
+            </div>
         </>
     );
 
     return (
         <SectionWrapper.FullWidth className="grid grid-cols-12 w-full container">
             {/* Sidebar Filters for Desktop */}
-            <div className="hidden md:block col-span-3 border-r">
+            <div className="hidden md:block col-span-3">
                 <div className="sticky top-20">
                     <FilterContent />
                 </div>
@@ -141,7 +158,7 @@ export default function MentorsWithFilter({ topics }) {
                 {selectedMentors.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {selectedMentors.map((mentor) => (
-                            <ProfileImageCard key={mentor.id} mentor={mentor} />
+                            <RedesignedMentorCard key={mentor.id} mentor={mentor} />
                         ))}
                     </div>
                 ) : (

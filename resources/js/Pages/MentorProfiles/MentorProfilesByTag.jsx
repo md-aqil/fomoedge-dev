@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Checkbox } from "@/shadcn/ui/checkbox";
 import { ScrollArea } from "@/shadcn/ui/scroll-area";
+import { Input } from "@/shadcn/ui/input";
 
 import {
     Sheet,
@@ -16,34 +16,102 @@ import {
     AccordionTrigger,
     AccordionContent,
 } from "@/shadcn/ui/accordion";
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
+import { ChevronDown, Filter, Search, SlidersHorizontal } from "lucide-react";
+import { cn } from "@/shadcn";
 import { Button } from "@/shadcn/ui/button";
-import { Label } from "@/shadcn/ui/label";
 import { ListFilter } from "lucide-react";
 import NoDataAlert from "@/Components/NoDataAlert";
-import ProfileImageCard from "@/Components/Cards/ProfileImageCard";
+import RedesignedMentorCard from "@/Components/Cards/RedesignedMentorCard";
 import BlankLayout from "@/Layouts/blank-layout";
 import Header from "@/Layouts/Header";
 import PageBanner from "@/Components/PageBanner";
 import SectionWrapper from "@/Components/SectionWrapper";
 import { router } from "@inertiajs/react";
 import { Link } from "@inertiajs/react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shadcn/ui/select";
+
+// New FilterButton component for the new design
+const FilterButton = ({ children, isActive = false, onClick }) => (
+    <button
+        onClick={onClick}
+        className={cn(
+            "flex items-center justify-between w-full text-left py-2 hover:bg-gray-50 rounded-md px-2 transition-colors duration-200",
+            isActive && "bg-gray-50"
+        )}
+    >
+        <div className="flex items-center gap-2">
+            <span className="font-medium text-gray-900">{children}</span>
+        </div>
+        <ChevronDown className="h-4 w-4 text-gray-500" />
+    </button>
+);
+
+const CustomAccordionTrigger = React.forwardRef(
+    ({ className, children, ...props }, ref) => (
+        <AccordionPrimitive.Header className="flex">
+            <AccordionPrimitive.Trigger
+                ref={ref}
+                className={cn(
+                    "flex items-center justify-between w-full text-left py-2 hover:bg-gray-50 rounded-md px-2 transition-colors duration-200 font-medium text-gray-900 [&[data-state=open]>svg]:rotate-180",
+                    className
+                )}
+                {...props}
+            >
+                <div className="flex items-center gap-2">
+                    <span>{children}</span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-gray-500 shrink-0 transition-transform duration-200" />
+            </AccordionPrimitive.Trigger>
+        </AccordionPrimitive.Header>
+    )
+);
+CustomAccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
 
 function FAQComponent({ data = [], className = "" }) {
-    if (!data || !Array.isArray(data) || data.length === 0) {
-        return (
-            <div className="text-muted-foreground text-sm p-4">
-                No FAQs available for this tag.
-            </div>
-        );
-    }
+    // Default FAQs to show when no specific FAQs are available
+    const defaultFaqs = [
+        {
+            question: "How do I choose the right mentor?",
+            answer: "Look for mentors with expertise in your field of interest, check their reviews and ratings, and consider their communication style and availability that matches your learning goals."
+        },
+        {
+            question: "What should I expect from a mentorship session?",
+            answer: "A typical session includes goal-setting, skill development discussions, career guidance, and actionable feedback tailored to your specific needs and career objectives."
+        },
+        {
+            question: "How long should a mentorship relationship last?",
+            answer: "The duration varies based on your goals. It can range from a few sessions for specific projects to ongoing relationships for long-term career development."
+        },
+        {
+            question: "What is the cost of mentorship sessions?",
+            answer: "Costs vary by mentor expertise and session length. You can view pricing on each mentor's profile before booking a session."
+        },
+        {
+            question: "How do I prepare for a mentorship session?",
+            answer: "Come with specific questions, goals you want to achieve, and any relevant materials. Be prepared to discuss your current challenges and what you hope to learn."
+        }
+    ];
+    
+    // Use provided data if available, otherwise use default FAQs
+    const faqsToShow = (data && Array.isArray(data) && data.length > 0) ? data : defaultFaqs;
+    
     return (
         <div className={className}>
-            <Accordion type="single" collapsible defaultValue="item-0">
-                {data.map((item, idx) => (
-                    <AccordionItem key={idx} value={`item-${idx}`}>
-                        <AccordionTrigger>{item.question}</AccordionTrigger>
-                        <AccordionContent>
-                            <p className="text-sm text-gray-600">
+            <Accordion type="single" collapsible className="space-y-4">
+                {faqsToShow.map((item, idx) => (
+                    <AccordionItem key={idx} value={`faq-${idx}`} className="border border-gray-200 rounded-lg px-4 bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                        <AccordionTrigger className="text-left font-medium text-gray-900 hover:text-yellow-600 py-4">
+                            {item.question}
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-4">
+                            <p className="text-sm text-gray-700 leading-relaxed">
                                 {item.answer}
                             </p>
                         </AccordionContent>
@@ -55,6 +123,36 @@ function FAQComponent({ data = [], className = "" }) {
 }
 
 export default function MentorProfilesByTag({ topics, mentors, tag }) {
+    const [searchTerm, setSearchTerm] = useState("");
+    const [sortBy, setSortBy] = useState("name");
+
+    // Filter mentors based on search term
+    const filteredMentors = mentors.filter(mentor => {
+        if (!searchTerm) return true;
+        const searchLower = searchTerm.toLowerCase();
+        const name = (mentor?.alias_name || mentor?.full_name || "").toLowerCase();
+        const experience = (mentor?.experience || "").toLowerCase();
+        const tags = mentor?.topic_tags?.map(t => t.title.toLowerCase()).join(" ") || "";
+        return name.includes(searchLower) || experience.includes(searchLower) || tags.includes(searchLower);
+    });
+
+    // Sort filtered mentors
+    const sortedMentors = [...filteredMentors].sort((a, b) => {
+        switch (sortBy) {
+            case "sessions":
+                return (b?.bookings_count || 0) - (a?.bookings_count || 0);
+            case "satisfaction":
+                return (b?.avg_mentor_rating || 0) - (a?.avg_mentor_rating || 0);
+            case "newest":
+                return new Date(b?.created_at || 0) - new Date(a?.created_at || 0);
+            case "name":
+            default:
+                const nameA = (a?.alias_name || a?.full_name || "").toLowerCase();
+                const nameB = (b?.alias_name || b?.full_name || "").toLowerCase();
+                return nameA.localeCompare(nameB);
+        }
+    });
+
     const handleTagChange = () => {
         // let updatedTags;
         // if (selectedTags.includes(tag.slug)) {
@@ -66,57 +164,61 @@ export default function MentorProfilesByTag({ topics, mentors, tag }) {
     };
 
     const FilterContent = () => (
-        <>
-            <SectionWrapper.Heading
-                level="h3"
-                className="text-xl font-semibold text-start"
-            >
-                Filter by
-            </SectionWrapper.Heading>
-            <ScrollArea className="overflow-auto sm:p-3 max-h-[calc(100vh-200px)] bg-yellow-50/10">
+        <div className="bg-white rounded-lg shadow-lg p-6 h-fit">
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-gray-600" />
+                    <h2 className="text-lg font-semibold text-gray-900">Filter by</h2>
+                </div>
+            </div>
+            <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
                 {topics.map((topic) => (
-                    <div key={topic.id} className="mb-4">
-                        <h4 className="font-semibold mb-2">{topic.title}</h4>
-                        <div className="max-h-60 overflow-y-auto">
-                            {topic.active_tags.map((t) => (
-                                <Label
-                                    htmlFor={t.slug}
-                                    key={t.id}
-                                    // className=""
-                                    className={`flex items-center text-[16px] mb-2 cursor-pointer mx-0  ${
-                                        t.slug == tag?.slug
-                                            ? "text-black"
-                                            : "text-slate-500"
-                                    }`}
-                                >
-                                    <Checkbox
-                                        id={t.slug}
-                                        checked={t.slug == tag?.slug}
-                                        onCheckedChange={() =>
-                                            tag?.slug == t.slug
-                                                ? router.visit(
-                                                      route(
-                                                          "mentors.all-mentors-by-tag",
-                                                      ),
-                                                  )
-                                                : router.visit(
-                                                      route(
-                                                          "mentors.all-mentors-by-tag",
-                                                          {
-                                                              tagSlug: t.slug,
-                                                          },
-                                                      ),
-                                                  )
-                                        }
-                                    />
-                                    <span className="ml-2">{t.title}</span>
-                                </Label>
-                            ))}
-                        </div>
+                    <div key={topic.id} className="border-b border-gray-200 pb-4 last:border-b-0">
+                        <Accordion type="single" collapsible value={topic.active_tags.some(t => t.slug === tag?.slug) ? topic.id : undefined}>
+                            <AccordionItem value={topic.id} className="border-b-0">
+                                <CustomAccordionTrigger>
+                                    {topic.title}
+                                </CustomAccordionTrigger>
+                                <AccordionContent className="pb-0 pt-2">
+                                    <div className="mt-2 space-y-2 pl-4">
+                                        {topic.active_tags.map((t) => (
+                                            <label
+                                                key={t.id}
+                                                className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-md p-2 transition-colors duration-200"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    id={t.slug}
+                                                    checked={t.slug == tag?.slug}
+                                                    onChange={() =>
+                                                        tag?.slug == t.slug
+                                                            ? router.visit(
+                                                                  route(
+                                                                      "mentors.all-mentors-by-tag",
+                                                                  ),
+                                                              )
+                                                            : router.visit(
+                                                                  route(
+                                                                      "mentors.all-mentors-by-tag",
+                                                                      {
+                                                                          tagSlug: t.slug,
+                                                                      },
+                                                                  ),
+                                                              )
+                                                    }
+                                                    className="h-4 w-4 text-yellow-400 border-gray-300 rounded focus:ring-yellow-400 focus:ring-2"
+                                                />
+                                                <span className="text-sm text-gray-700">{t.title}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                     </div>
                 ))}
-            </ScrollArea>
-        </>
+            </div>
+        </div>
     );
 
     return (
@@ -126,116 +228,148 @@ export default function MentorProfilesByTag({ topics, mentors, tag }) {
             schema={tag ? tag.schema : ""}
         >
             <Header />
-            <PageBanner
-                title={`Mentors ${tag ? `with ${tag.title}` : ""}`}
-                // breadcrumbs={<GenerateBreadcrumbs />}
-            />
-
-            <SectionWrapper.FullWidth className="grid grid-cols-12 w-full container">
-                {/* Sidebar Filters for Desktop */}
-                <div className="hidden md:block col-span-3 border-r">
-                    <div className="sticky top-20">
-                        <FilterContent />
+            
+            {/* New Yellow Gradient Header */}
+            <main className="relative bg-gray-50">
+                <div className="bg-gradient-to-b from-yellow-400 to-yellow-300 py-28">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 text-center">
+                            Mentors {tag && `with ${tag.title}`}
+                        </h1>
                     </div>
                 </div>
-
-                {/* Drawer Filters for Mobile */}
-                <div className="col-span-12 md:hidden mb-4">
-                    <Sheet>
-                        <SheetTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className="w-full gap-x-3"
-                            >
-                                <ListFilter className="ml-2" /> Filter
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent className="bg-slate-100">
-                            <div className="pb-4">
+                
+                <div className="container -mt-8 relative z-10">
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        {/* Sidebar Filters for Desktop */}
+                        <aside className="lg:w-80 flex-shrink-0">
+                            <div className="hidden lg:block sticky top-24">
                                 <FilterContent />
                             </div>
-                        </SheetContent>
-                    </Sheet>
-                </div>
+                        </aside>
 
-                {/* Profile Cards Section */}
-                <div className="col-span-12 md:col-span-9 p-4 !pt-0 space-y-4">
-                    {tag?.tag_details && (
-                        <SectionWrapper.FullWidth className="bg-fomoPrimary-0/10 rounded-md !px-6 !py-6 border border-slate-200">
-                            {/* <SectionWrapper.Heading
-                                level="h2"
-                                className="text-lg font-semibold mb-2"
-                            >
-                                About {tag ? tag.title : "Mentors"}
-                            </SectionWrapper.Heading> */}
-
-                            {tag?.tag_details && (
-                                <div
-                                    className="text-sm text-slate-700 mb-2"
-                                    dangerouslySetInnerHTML={{
-                                        __html: tag.tag_details,
-                                    }}
-                                />
-                            )}
-                        </SectionWrapper.FullWidth>
-                    )}
-
-                    <div>
-                        {mentors.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {mentors.map((mentor) => (
-                                    <ProfileImageCard
-                                        key={mentor.id}
-                                        mentor={mentor}
-                                    />
-                                ))}
+                        {/* Main Content Area */}
+                        <div className="flex-1 min-w-0 pb-8">
+                            {/* Search and Controls Bar */}
+                            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                                    <div className="flex-1 w-full sm:max-w-md">
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                            <Input
+                                                placeholder="Search mentors by name or expertise..."
+                                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all duration-200 text-sm"
+                                                type="text"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                                        <div className="text-sm text-gray-600">
+                                            {sortedMentors.length} mentors found
+                                        </div>
+                                        <button className="lg:hidden flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 text-sm font-medium">
+                                            <Sheet>
+                                                <SheetTrigger asChild>
+                                                    <div className="flex items-center gap-2">
+                                                        <SlidersHorizontal className="h-4 w-4" />
+                                                        <span>Filters</span>
+                                                    </div>
+                                                </SheetTrigger>
+                                                <SheetContent className="bg-slate-100 w-full sm:max-w-md">
+                                                    <div className="pb-4 h-full overflow-y-auto">
+                                                        <FilterContent />
+                                                    </div>
+                                                </SheetContent>
+                                            </Sheet>
+                                        </button>
+                                        <div className="hidden sm:flex items-center gap-2">
+                                            <label htmlFor="sort" className="text-sm text-gray-600 font-medium">
+                                                Sort by:
+                                            </label>
+                                            <Select value={sortBy} onValueChange={setSortBy}>
+                                                <SelectTrigger className="w-32 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all duration-200 bg-white">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="name">Name</SelectItem>
+                                                    <SelectItem value="sessions">Sessions</SelectItem>
+                                                    <SelectItem value="satisfaction">Satisfaction</SelectItem>
+                                                    <SelectItem value="newest">Newest</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        ) : (
-                            <NoDataAlert title="No mentors found!" />
-                        )}
-                    </div>
-                    {tag?.tag_cta_description && (
-                        <SectionWrapper.FullWidth className="bg-fomoPrimary-0/10 rounded-md !px-6 !py-6 border border-slate-200">
-                            {/* <div className="bg-fomoPrimary-0/10 rounded-md p-4"> */}
-                            <div
-                                className="text-sm text-slate-700 mb-2"
-                                dangerouslySetInnerHTML={{
-                                    __html: tag.tag_cta_description,
-                                }}
-                            />
 
-                            {tag?.tag_cta?.label && tag?.tag_cta?.link && (
-                                <div className="flex justify-center">
-                                    <Button
-                                        className="w-full max-w-lg gap-x-3 py-3 sm:text-lg"
-                                        asChild
-                                    >
-                                        <Link href={tag?.tag_cta?.link}>
-                                            {tag?.tag_cta?.label}
-                                        </Link>
-                                    </Button>
+                            {/* Tag Details Section */}
+                            {tag?.tag_details && (
+                                <div className="bg-yellow-50 rounded-lg p-6 mb-6 border border-yellow-200">
+                                    <div
+                                        className="text-sm text-gray-700"
+                                        dangerouslySetInnerHTML={{
+                                            __html: tag.tag_details,
+                                        }}
+                                    />
                                 </div>
                             )}
-                            {/* </div> */}
-                        </SectionWrapper.FullWidth>
-                    )}
 
-                    {Array.isArray(tag?.faqs) && tag.faqs.length > 0 && (
-                        <SectionWrapper.Boxed className="bg-gray-100 !px-0 !py-4">
-                            <SectionWrapper.Heading
-                                level="h2"
-                                className="text-lg font-semibold"
-                            >
-                                Frequently Asked Questions
-                            </SectionWrapper.Heading>
-                            <FAQComponent
-                                className="!w-full !max-w-none p-0"
-                                data={tag.faqs}
-                            />
-                        </SectionWrapper.Boxed>
-                    )}
+                            {/* Mentors Grid */}
+                            <div>
+                                {sortedMentors.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {sortedMentors.map((mentor) => (
+                                            <RedesignedMentorCard
+                                                key={mentor.id}
+                                                mentor={mentor}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <NoDataAlert title="No mentors found!" />
+                                )}
+                            </div>
+                            {/* Tag CTA Section */}
+                            {tag?.tag_cta_description && (
+                                <div className="bg-yellow-50 rounded-lg p-6 mt-6 border border-yellow-200">
+                                    <div
+                                        className="text-sm text-gray-700 mb-4"
+                                        dangerouslySetInnerHTML={{
+                                            __html: tag.tag_cta_description,
+                                        }}
+                                    />
+
+                                    {tag?.tag_cta?.label && tag?.tag_cta?.link && (
+                                        <div className="flex justify-center">
+                                            <Button
+                                                className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold px-8 py-3 rounded-lg transition-colors duration-200"
+                                                asChild
+                                            >
+                                                <Link href={tag?.tag_cta?.link}>
+                                                    {tag?.tag_cta?.label}
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* FAQ Section - Always Show */}
+                            <div className="bg-white rounded-lg shadow-lg p-6 mt-8 border border-gray-200">
+                                <h2 className="text-xl font-bold text-gray-900 mb-6">
+                                    Frequently Asked Questions
+                                </h2>
+                                <FAQComponent
+                                    className="w-full"
+                                    data={tag?.faqs || []}
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </SectionWrapper.FullWidth>
+            </main>
         </BlankLayout>
     );
 }

@@ -37,7 +37,7 @@ const Main = ({ children, className = "" }) => {
 
 const Aside = ({children}) => {
     return (
-        <aside className="w-full h-full space-y-4">
+        <aside className="col-span-1 w-full h-full space-y-4">
             {children}
         </aside>
     );
